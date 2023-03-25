@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Text.Json;
 
 namespace cli_life
 {
@@ -27,6 +28,15 @@ namespace cli_life
             IsAlive = IsAliveNext;
         }
     }
+
+    public class BoardSettings
+    {
+        public int Width { get; set; }
+        public int Height { get; set; }
+        public int CellSize { get; set; }
+        public double LiveDensity { get; set; }
+    }
+
     public class Board
     {
         public readonly Cell[,] Cells;
@@ -91,6 +101,31 @@ namespace cli_life
                     Cells[x, y].neighbors.Add(Cells[xR, yB]);
                 }
             }
+        }
+        public void SaveSettings(string filePath)
+        {
+            var settings = new BoardSettings
+            {
+                Width = Columns,
+                Height = Rows,
+                CellSize = CellSize,
+                LiveDensity = 0.5
+            };
+
+            string jsonString = JsonSerializer.Serialize(settings);
+            File.WriteAllText(filePath, jsonString);
+        }
+
+        public static Board LoadSettings(string filePath)
+        {
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException("Settings file not found.", filePath);
+
+            string jsonString = File.ReadAllText(filePath);
+            var settings = JsonSerializer.Deserialize<BoardSettings>(jsonString);
+
+            var board = new Board(settings.Width, settings.Height, settings.CellSize,false, settings.LiveDensity);
+            return board;
         }
     }
     class Program
@@ -169,26 +204,41 @@ namespace cli_life
         static void Main(string[] args)
         {
             Reset();
+            bool work = true;
             while(true)
             {
                 Console.Clear();
                 Render();
-                board.Advance();
-                if (Console.KeyAvailable)
+                if (work) board.Advance();
+                ConsoleKeyInfo key = Console.ReadKey(true);
+                switch (key.KeyChar)
                 {
-                    ConsoleKeyInfo key = Console.ReadKey(true);
-                    if (key.KeyChar == 's')
-                    {
+                    
+                    case 's':
                         Console.WriteLine("сохранение");
                         Save(board, "board.dat");
                         Console.WriteLine("Успешное сохранение в board.dat");
-                    }
-                    else if (key.KeyChar == 'l')
-                    {
+                        break;
+                    case 'l':                   
                         Console.WriteLine("Загрузка");
                         Load(ref board, "board.dat");
                         Console.WriteLine("Загружено из board.dat");
-                    }
+                        break;
+                    case 'p':
+                        work = false;
+                        break;
+                    case 'n':
+                        Console.WriteLine("сохранение настроек");
+                        board.SaveSettings("board_settings.json");
+                        break;
+                    case 'd':
+                        board = Board.LoadSettings("board_settings.json");
+                        Console.WriteLine("Загрузка настроек");
+                        break;
+                    case 'g':
+                        work = true;
+                        break;
+
                 }
                 Thread.Sleep(1000);
                
