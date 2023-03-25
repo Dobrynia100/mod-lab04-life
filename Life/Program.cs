@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace cli_life
 {
@@ -29,13 +31,12 @@ namespace cli_life
     {
         public readonly Cell[,] Cells;
         public readonly int CellSize;
-
         public int Columns { get { return Cells.GetLength(0); } }
         public int Rows { get { return Cells.GetLength(1); } }
         public int Width { get { return Columns * CellSize; } }
         public int Height { get { return Rows * CellSize; } }
 
-        public Board(int width, int height, int cellSize, double liveDensity = .1)
+        public Board(int width, int height, int cellSize, bool downl, double liveDensity = .1)
         {
             CellSize = cellSize;
 
@@ -45,7 +46,8 @@ namespace cli_life
                     Cells[x, y] = new Cell();
 
             ConnectNeighbors();
-            Randomize(liveDensity);
+
+            if(!downl)Randomize(liveDensity);
         }
 
         readonly Random rand = new Random();
@@ -61,6 +63,11 @@ namespace cli_life
                 cell.DetermineNextLiveState();
             foreach (var cell in Cells)
                 cell.Advance();
+        }
+        public void dead()
+        {
+            foreach (var cell in Cells)
+                cell.IsAlive = false;
         }
         private void ConnectNeighbors()
         {
@@ -95,6 +102,7 @@ namespace cli_life
                 width: 50,
                 height: 20,
                 cellSize: 1,
+                false,
                 liveDensity: 0.5);
         }
         static void Render()
@@ -116,6 +124,48 @@ namespace cli_life
                 Console.Write('\n');
             }
         }
+
+        public static void Save(Board board, string filename)
+        {
+            using (StreamWriter writer = new StreamWriter(filename))
+            {
+                for (int x = 0; x < board.Columns; x++)
+                {
+                    for (int y = 0; y < board.Rows; y++)
+                    {
+                        if (board.Cells[x, y].IsAlive)
+                        {
+                            writer.Write("{0},{1},", x, y);
+                        }
+                    }
+                }
+            }
+        }
+
+        public static void Load(ref Board board, string filename)
+        {
+            using (StreamReader reader = new StreamReader(filename))
+            {
+                board = new Board(board.Width, board.Height, board.CellSize,true);
+                board.dead();
+                int i= 1;
+                string[] coordinates = reader.ReadLine().Split(',');
+                while (i!<=coordinates.Length-1)
+                {
+                    
+                    
+                    int x = int.Parse(coordinates[i-1]);
+                    int y = int.Parse(coordinates[i]);
+                    //Console.WriteLine(Convert.ToString(x));
+                    //Console.WriteLine(Convert.ToString(y));
+                    //Console.WriteLine(Convert.ToString(reader.ReadLine()));
+                    board.Cells[x, y].IsAlive = true;
+                    i+=2;
+                    
+                }
+            }
+        }
+
         static void Main(string[] args)
         {
             Reset();
@@ -124,7 +174,24 @@ namespace cli_life
                 Console.Clear();
                 Render();
                 board.Advance();
+                if (Console.KeyAvailable)
+                {
+                    ConsoleKeyInfo key = Console.ReadKey(true);
+                    if (key.KeyChar == 's')
+                    {
+                        Console.WriteLine("сохранение");
+                        Save(board, "board.dat");
+                        Console.WriteLine("Успешное сохранение в board.dat");
+                    }
+                    else if (key.KeyChar == 'l')
+                    {
+                        Console.WriteLine("Загрузка");
+                        Load(ref board, "board.dat");
+                        Console.WriteLine("Загружено из board.dat");
+                    }
+                }
                 Thread.Sleep(1000);
+               
             }
         }
     }
