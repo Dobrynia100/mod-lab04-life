@@ -49,7 +49,6 @@ namespace cli_life
         public Board(int width, int height, int cellSize, bool downl, double liveDensity = .1)
         {
             CellSize = cellSize;
-
             Cells = new Cell[width / cellSize, height / cellSize];
             for (int x = 0; x < Columns; x++)
                 for (int y = 0; y < Rows; y++)
@@ -81,16 +80,12 @@ namespace cli_life
         }
         private void ConnectNeighbors()
         {
-            for (int x = 0; x < Columns; x++)
-            {
-                for (int y = 0; y < Rows; y++)
-                {
+            for (int x = 0; x < Columns; x++) {
+                for (int y = 0; y < Rows; y++) {
                     int xL = (x > 0) ? x - 1 : Columns - 1;
                     int xR = (x < Columns - 1) ? x + 1 : 0;
-
                     int yT = (y > 0) ? y - 1 : Rows - 1;
                     int yB = (y < Rows - 1) ? y + 1 : 0;
-
                     Cells[x, y].neighbors.Add(Cells[xL, yT]);
                     Cells[x, y].neighbors.Add(Cells[x, yT]);
                     Cells[x, y].neighbors.Add(Cells[xR, yT]);
@@ -102,8 +97,7 @@ namespace cli_life
                 }
             }
         }
-        public void SaveSettings(string filePath)
-        {
+        public void SaveSettings(string filePath) {
             var settings = new BoardSettings
             {
                 Width = Columns,
@@ -116,8 +110,7 @@ namespace cli_life
             File.WriteAllText(filePath, jsonString);
         }
 
-        public static Board LoadSettings(string filePath)
-        {
+        public static Board LoadSettings(string filePath) {
             if (!File.Exists(filePath))
                 throw new FileNotFoundException("Settings file not found.", filePath);
 
@@ -131,8 +124,7 @@ namespace cli_life
     class Program
     {
         static Board board;
-        static private void Reset()
-        {
+        static private void Reset() {
             board = new Board(
                 width: 50,
                 height: 20,
@@ -140,19 +132,14 @@ namespace cli_life
                 false,
                 liveDensity: 0.5);
         }
-        static void Render()
-        {
-            for (int row = 0; row < board.Rows; row++)
-            {
-                for (int col = 0; col < board.Columns; col++)   
-                {
+        static void Render() {
+            for (int row = 0; row < board.Rows; row++) {
+                for (int col = 0; col < board.Columns; col++) {
                     var cell = board.Cells[col, row];
-                    if (cell.IsAlive)
-                    {
+                    if (cell.IsAlive) {
                         Console.Write('*');
                     }
-                    else
-                    {
+                    else {
                         Console.Write(' ');
                     }
                 }
@@ -160,16 +147,11 @@ namespace cli_life
             }
         }
 
-        public static void Save(Board board, string filename)
-        {
-            using (StreamWriter writer = new StreamWriter(filename))
-            {
-                for (int x = 0; x < board.Columns; x++)
-                {
-                    for (int y = 0; y < board.Rows; y++)
-                    {
-                        if (board.Cells[x, y].IsAlive)
-                        {
+        public static void Save(Board board, string filename) {
+            using (StreamWriter writer = new StreamWriter(filename)) {
+                for (int x = 0; x < board.Columns; x++) {
+                    for (int y = 0; y < board.Rows; y++) {
+                        if (board.Cells[x, y].IsAlive) {
                             writer.Write("{0},{1},", x, y);
                         }
                     }
@@ -177,28 +159,33 @@ namespace cli_life
             }
         }
 
-        public static void Load(ref Board board, string filename)
-        {
-            using (StreamReader reader = new StreamReader(filename))
-            {
+        public static void Load(ref Board board, string filename) {
+            using (StreamReader reader = new StreamReader(filename)) {
                 board = new Board(board.Width, board.Height, board.CellSize,true);
                 board.dead();
                 int i= 1;
                 string[] coordinates = reader.ReadLine().Split(',');
-                while (i!<=coordinates.Length-1)
-                {
-                    
-                    
+                while (i!<=coordinates.Length-1) {                                       
                     int x = int.Parse(coordinates[i-1]);
                     int y = int.Parse(coordinates[i]);
                     //Console.WriteLine(Convert.ToString(x));
                     //Console.WriteLine(Convert.ToString(y));
                     //Console.WriteLine(Convert.ToString(reader.ReadLine()));
                     board.Cells[x, y].IsAlive = true;
-                    i+=2;
-                    
+                    i+=2;                   
                 }
             }
+        }
+        public static int countalive() {
+            int count = 0;
+            for (int x = 0; x < board.Columns; x++) {
+                for (int y = 0; y < board.Rows; y++) {
+                    if (board.Cells[x, y].IsAlive) {
+                        count++;
+                    }
+                }
+            }
+            return count;
         }
 
         static void Main(string[] args)
@@ -207,41 +194,52 @@ namespace cli_life
             bool work = true;
             while(true)
             {
-                Console.Clear();
-                Render();
-                if (work) board.Advance();
-                ConsoleKeyInfo key = Console.ReadKey(true);
-                switch (key.KeyChar)
+                if (work)
                 {
-                    
-                    case 's':
-                        Console.WriteLine("сохранение");
-                        Save(board, "board.dat");
-                        Console.WriteLine("Успешное сохранение в board.dat");
-                        break;
-                    case 'l':                   
-                        Console.WriteLine("Загрузка");
-                        Load(ref board, "board.dat");
-                        Console.WriteLine("Загружено из board.dat");
-                        break;
-                    case 'p':
-                        work = false;
-                        break;
-                    case 'n':
-                        Console.WriteLine("сохранение настроек");
-                        board.SaveSettings("board_settings.json");
-                        break;
-                    case 'd':
-                        board = Board.LoadSettings("board_settings.json");
-                        Console.WriteLine("Загрузка настроек");
-                        break;
-                    case 'g':
-                        work = true;
-                        break;
-
-                }
-                Thread.Sleep(1000);
+                    Console.Clear();
                
+                    Render();
+                    board.Advance();
+                    Thread.Sleep(1000);
+                }
+               
+                if (Console.KeyAvailable)
+                {
+                    ConsoleKeyInfo key = Console.ReadKey(true);
+                    switch (key.KeyChar)
+                    {
+
+                        case 's':
+                            Console.WriteLine("сохранение");
+                            Save(board, "board.dat");
+                            Console.WriteLine("Успешное сохранение в board.dat");
+                            break;
+                        case 'l':
+                            Console.WriteLine("Загрузка");
+                            Load(ref board, "board.dat");
+                            Console.WriteLine("Загружено из board.dat");
+                            break;
+                        case 'p':
+                            Console.WriteLine("Пауза");
+                            work = false;
+                            break;
+                        case 'n':
+                            Console.WriteLine("сохранение настроек");
+                            board.SaveSettings("board_settings.json");
+                            break;
+                        case 'd':
+                            board = Board.LoadSettings("board_settings.json");
+                            Console.WriteLine("Загрузка настроек");
+                            break;
+                        case 'r':
+                            Console.WriteLine("Возобновление");
+                            work = true;
+                            break;
+
+                    }
+                }
+                
+
             }
         }
     }
