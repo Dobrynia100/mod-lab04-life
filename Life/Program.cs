@@ -112,7 +112,7 @@ namespace cli_life
 
         public static Board LoadSettings(string filePath) {
             if (!File.Exists(filePath))
-                throw new FileNotFoundException("Settings file not found.", filePath);
+                throw new FileNotFoundException("Файл настроек не найден", filePath);
 
             string jsonString = File.ReadAllText(filePath);
             var settings = JsonSerializer.Deserialize<BoardSettings>(jsonString);
@@ -160,21 +160,25 @@ namespace cli_life
         }
 
         public static void Load(ref Board board, string filename) {
-            using (StreamReader reader = new StreamReader(filename)) {
-                board = new Board(board.Width, board.Height, board.CellSize,true);
-                board.dead();
-                int i= 1;
-                string[] coordinates = reader.ReadLine().Split(',');
-                while (i!<=coordinates.Length-1) {                                       
-                    int x = int.Parse(coordinates[i-1]);
-                    int y = int.Parse(coordinates[i]);
-                    //Console.WriteLine(Convert.ToString(x));
-                    //Console.WriteLine(Convert.ToString(y));
-                    //Console.WriteLine(Convert.ToString(reader.ReadLine()));
-                    board.Cells[x, y].IsAlive = true;
-                    i+=2;                   
+            try
+            {
+                using (StreamReader reader = new StreamReader(filename))
+                {
+                    board = new Board(board.Width, board.Height, board.CellSize, true);
+                    board.dead();
+                    int i = 1;
+                    string[] coordinates = reader.ReadLine().Split(',');
+                    while (i! <= coordinates.Length - 1)
+                    {
+                        int x = int.Parse(coordinates[i - 1]);
+                        int y = int.Parse(coordinates[i]);
+                        board.Cells[x, y].IsAlive = true;
+                        i += 2;
+                    }
                 }
-            }
+            }catch (Exception e) {
+                Console.WriteLine("Файл не найден");
+                    }
         }
         public static int countalive() {
             int count = 0;
