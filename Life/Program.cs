@@ -7,11 +7,14 @@ using System.Threading;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace cli_life
 {
     public class Cell
     {
+        public int RowIndex { get; set; }
+        public int ColumnIndex { get; set; }
         public bool IsAlive;
         public readonly List<Cell> neighbors = new List<Cell>();
         private bool IsAliveNext;
@@ -119,6 +122,160 @@ namespace cli_life
 
             var board = new Board(settings.Width, settings.Height, settings.CellSize,false, settings.LiveDensity);
             return board;
+        }
+        public void Classify()
+        {
+            int rows = Rows;
+            int cols = Columns;
+            bool[,] classification = new bool[rows, cols];
+
+            bool[,] block = new bool[2, 2] { { true, true }, { true, true } };
+
+            for (int r = 0; r < rows - block.GetLength(0); r++)
+            {
+                for (int c = 0; c < cols - block.GetLength(1); c++)
+                {
+                    bool match = true;
+                    for (int br = 0; br < block.GetLength(0); br++)
+                    {
+                        for (int bc = 0; bc < block.GetLength(1); bc++)
+                        {
+                            if (Cells[r + br, c + bc].IsAlive != block[br, bc])
+                            {
+                                match = false;
+                                break;
+                            }
+                        }
+                        if (!match)
+                            break;
+                    }
+                    if (match)
+                    {
+                        for (int br = 0; br < block.GetLength(0); br++)
+                        {
+                            for (int bc = 0; bc < block.GetLength(1); bc++)
+                            {
+                                classification[r + br, c + bc] = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            for (int r = 0; r < rows; r++)
+            {
+                StringBuilder sb = new StringBuilder();
+                for (int c = 0; c < cols; c++)
+                {
+                    if (classification[r, c])
+                    {
+                        sb.Append("*");
+                    }
+                    else
+                    {
+                        sb.Append(Cells[r, c].IsAlive ? "O" : ".");
+                    }
+                }
+                Console.WriteLine(sb.ToString());
+            }
+        }
+        public int GetStablePhaseTime(int maxIterations)
+        {
+            int sumI = 0;
+            int Iter= 0;
+
+            while (Iter < maxIterations)
+            {
+                Advance();
+                int stablePhaseTime = StablePhaseTime();
+
+                if (stablePhaseTime > 0)
+                {
+                    sumI += stablePhaseTime;
+                    Iter++;
+                }
+            }
+
+            return Iter > 0 ? sumI / Iter : 0;
+        }
+
+      
+
+        private int StablePhaseTime()
+        {
+            var boardState = JsonSerializer.Serialize(Cells);
+            int iterations = 0;
+
+            while (true)
+            {
+                Advance();
+                string newBoardState = JsonSerializer.Serialize(Cells);
+
+                if (newBoardState == boardState)
+                {
+                    return iterations;
+                }
+
+                boardState = newBoardState;
+                iterations++;
+            }
+        }
+        public int SymCount()
+        {
+            int count = 0;
+            for (int r = 0; r < Rows; r++)
+            {
+                for (int c = 0; c < Columns; c++)
+                {
+                    if (Cells[r, c].IsAlive && Cells[Rows - 1 - r, Columns - 1 - c].IsAlive)
+                    {
+                        count++;
+                    }
+                }
+            }
+            return count;
+        }
+
+        public void Symmetry(int numgen)
+        {
+            var board1 = this.Clone();
+            var board2 = this.Clone();
+            for (int i = 0; i < numgen; i++)
+            {
+                board1.Advance();
+                board2.Advance();
+                board2.Mirror();
+                if (board1.Equals(board2))
+                {
+                    Console.WriteLine($"Симметрия после {i + 1} итерраций.");
+                    return;
+                }
+            }
+            Console.WriteLine($"асимметрия после {numgen} итерраций.");
+        }
+
+        private void Mirror()
+        {
+            int rows = Rows;
+            int Colums = Columns;
+            for (int r = 0; r < rows; r++)
+            {
+                for (int c = 0; c < Colums / 2; c++)
+                {
+                    bool temp = Cells[r, c].IsAlive;
+                    Cells[r, c].IsAlive = Cells[r, Colums - 1 - c].IsAlive;
+                    Cells[r, Colums - 1 - c].IsAlive = temp;
+                }
+            }
+        }
+
+        public Board Clone()
+        {
+            var clone = new Board(Width, Height, CellSize,false);
+            for (int x = 0; x < Columns; x++)
+                for (int y = 0; y < Rows; y++)
+                    clone.Cells[x, y].IsAlive = Cells[x, y].IsAlive;
+            return clone;
         }
     }
     class Program
