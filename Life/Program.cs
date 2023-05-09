@@ -13,8 +13,7 @@ namespace cli_life
 {
     public class Cell
     {
-        public int RowIndex { get; set; }
-        public int ColumnIndex { get; set; }
+       
         public bool IsAlive;
         public readonly List<Cell> neighbors = new List<Cell>();
         private bool IsAliveNext;
@@ -129,18 +128,18 @@ namespace cli_life
             int cols = Columns;
             bool[,] classification = new bool[rows, cols];
 
-            bool[,] block = new bool[2, 2] { { true, true }, { true, true } };
+            bool[,] box = new bool[3, 3] { {false, true, false }, { true, false,true }, { false, true, false } };
 
-            for (int r = 0; r < rows - block.GetLength(0); r++)
+            for (int r = 0; r < rows - box.GetLength(0); r++)
             {
-                for (int c = 0; c < cols - block.GetLength(1); c++)
+                for (int c = 0; c < cols - box.GetLength(1); c++)
                 {
                     bool match = true;
-                    for (int br = 0; br < block.GetLength(0); br++)
+                    for (int br = 0; br < box.GetLength(0); br++)
                     {
-                        for (int bc = 0; bc < block.GetLength(1); bc++)
+                        for (int bc = 0; bc < box.GetLength(1); bc++)
                         {
-                            if (Cells[r + br, c + bc].IsAlive != block[br, bc])
+                            if (Cells[r + br, c + bc].IsAlive != box[br, bc])
                             {
                                 match = false;
                                 break;
@@ -151,9 +150,9 @@ namespace cli_life
                     }
                     if (match)
                     {
-                        for (int br = 0; br < block.GetLength(0); br++)
+                        for (int br = 0; br < box.GetLength(0); br++)
                         {
-                            for (int bc = 0; bc < block.GetLength(1); bc++)
+                            for (int bc = 0; bc < box.GetLength(1); bc++)
                             {
                                 classification[r + br, c + bc] = true;
                             }
